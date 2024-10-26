@@ -2,18 +2,193 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game of Chance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-Welcome to the worst website you have ever laid eyes on. <br />
-<br />
-Full website soon, with actual features and stuff. <br />
+<body class="bg-gray-900 text-gray-200 font-sans antialiased">
+    <header class="bg-gray-800 p-4 lg:hidden flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-yellow-300">Game of Chance</h1>
+        <button id="menuToggle" class="text-yellow-300 focus:outline-none">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-8 h-8">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
+        </button>
+    </header>
 
-<h1>Episode Progress</h1>
-<a href="/goc-progress/1.html">Episode 1 Unlocks</a><br />
-<a href="/goc-progress/2.html">Episode 2 Unlocks</a><br />
+    <div class="flex min-h-screen">
+        <aside id="sidebar" class="w-64 bg-gray-800 p-6 lg:block lg:relative lg:translate-x-0 absolute inset-y-0 left-0 transform -translate-x-full transition-transform duration-200 ease-in-out z-20">
 
-<p>You can read details about the rules <a href="/goc-progress/rules.html">here</a>.</p>
+            <img src="goc.png" alt="Game of Chance" class="mx-auto w-12 h-12">
+            
+            <nav class="space-y-4">
+                <button onclick="showContent('welcome')" class="w-full text-left py-2 px-4 bg-gray-700 hover:bg-yellow-300 text-yellow-300 hover:text-gray-900 rounded transition">Welcome</button>
+                <button onclick="showContent('progress')" class="w-full text-left py-2 px-4 bg-gray-700 hover:bg-yellow-300 text-yellow-300 hover:text-gray-900 rounded transition">Episode Progress</button>
+                <button onclick="showContent('rules')" class="w-full text-left py-2 px-4 bg-gray-700 hover:bg-yellow-300 text-yellow-300 hover:text-gray-900 rounded transition">Rules</button>
+            </nav>
+        </aside>
 
+        <main class="flex-1 p-8 lg:ml-64">
+            <div id="welcome" class="mb-12 text-center">
+                <h2 class="text-4xl font-bold text-yellow-300">Welcome to Game of Chance</h2>
+                <h3 class="text-2xl font-semibold text-gray-400 mt-4">Full website soon, with actual features and stuff.</h3>
+                <p class="mt-4 text-gray-400">An upcoming series with unique item unlock mechanics and more!</p>
+                <button onclick="showContent('progress')" class="mt-6 px-6 py-2 bg-yellow-300 text-gray-900 font-semibold rounded hover:bg-yellow-400 transition">
+                    Explore Episode Progress
+                </button>
+            </div>
+
+            <div id="progress" class="hidden">
+                <h1 class="text-3xl font-bold text-yellow-300">Episode Progress</h1>
+                <div class="flex justify-center gap-4 mt-4">
+                    <button onclick="loadItems('ep1.json', 'r3arQENE5HI')" class="px-4 py-2 bg-yellow-300 text-gray-900 font-semibold rounded hover:bg-yellow-400 transition">Episode 1</button>
+                    <button onclick="loadItems('ep2.json', 'GJbZr9ffbb8')" class="px-4 py-2 bg-yellow-300 text-gray-900 font-semibold rounded hover:bg-yellow-400 transition">Episode 2</button>
+                </div>
+
+                <div class="flex justify-center mb-8">
+                    <div id="youtubePlayer"></div>
+                </div>
+
+                <div id="itemsContainer" class="flex flex-wrap gap-6 justify-center"></div>
+            </div>
+
+            <div id="rules" class="hidden">
+                <h2 class="text-3xl font-bold text-yellow-300 mb-4">Series Rules</h2>
+                <ul class="list-disc list-inside space-y-2 text-lg text-gray-300">
+                    <li>Untradeable items are unrestricted.</li>
+                    <li>Starting out, every item which is tradeable on the Grand Exchange is locked.</li>
+                    <li>When locked, items cannot be used for any purpose, picked up from the ground, deposited in the bank, or purchased from a shop.</li>
+                    <li>Obtaining a tradeable item for the first time triggers an unlock roll with equal probability for all locked items.</li>
+                    <li>Items spawned by scenery are allowed if the plugin permits it, even if they look like items on the ground!</li>
+                    <li>Locked items cannot be obtained from shops, but I am allowed to obtain them via NPC dialogue.</li>
+                    <li>The first time I obtain each pet, I will roll 5 unlocks as a bonus.</li>
+                </ul>
+
+                <h3 class="text-2xl font-semibold text-yellow-300 mt-8">RNG</h3>
+                <p class="mt-2 text-gray-400">Since items are regularly added to OSRS, there is no permanent pairing between obtained items and unlocked items.</p>
+                <p class="mt-2 text-gray-400">Instead, the item which gets rolled is determined on-the-fly by a roll.</p>
+                <p class="mt-2 text-gray-400">Each unlock roll uses a persistent seed tied to my account, modified based on the total number of unlocks so far and the item obtained.</p>
+                <p class="mt-2 text-gray-400">When new items are released, I check to see if they are valid (i.e. actually obtainable, not falsely marked as tradeable) and they are then added to the total pool of items available for unlock.</p>
+                <p class="mt-2 text-gray-400">I've tested it thoroughly to make sure it is uniformly random across the available items, and it certainly is.</p>
+                <p class="mt-2 text-gray-400">Below are details about excluded items and the modified way that poisoned items work.</p>
+
+                <h3 class="text-2xl font-semibold text-yellow-300 mt-8">Removed items</h3>
+                <p class="mt-2 text-gray-400">Item sets (those you obtain at the G.E. in exchange for all items in the set) are removed from the list of unlockable items.</p>
+                <p class="mt-2 text-gray-400">Construction flat packs are removed from the list of unlockable items.</p>
+
+                <h3 class="text-2xl font-semibold text-yellow-300 mt-8">Poisoned variants</h3>
+                <p class="mt-2 text-gray-400">To avoid there being 3:1 poisoned variants per base item, which was buzzkill unfun trash in my test run, poisoned variants of items are <b>not</b> directly unlocked.</p>
+                <p class="mt-2 text-gray-400">Poisoned variants of items become usable once both the <b>base item and given tier of weapon poison</b> have been both unlocked and obtained.</p>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        var tag = document.createElement('script');
+
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        function showContent(section) {
+            document.getElementById('welcome').classList.add('hidden');
+            document.getElementById('progress').classList.add('hidden');
+            document.getElementById('rules').classList.add('hidden');
+            document.getElementById(section).classList.remove('hidden');
+            
+            if (window.innerWidth < 1024) toggleSidebar(false);
+        }
+
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        menuToggle.addEventListener('click', () => toggleSidebar());
+
+        function toggleSidebar(show) {
+            const isVisible = sidebar.classList.contains('translate-x-0');
+            if (show === undefined) show = !isVisible;
+            sidebar.classList.toggle('translate-x-0', show);
+        }
+
+        var player;
+        var isPlayerReady = false;
+        function onYouTubeIframeAPIReady() {
+            isPlayerReady = true;
+        }
+
+        function onPlayerReady(event) {
+            event.target.pauseVideo();
+        }
+
+
+        function playEpisode(container, videoId) {
+            if (player && isPlayerReady) {
+                player.loadVideoById(videoId);
+            } else {
+                player = new YT.Player(container, {
+                    height: '390',
+                    width: '640',
+                    videoId: videoId,
+                    events: {
+                        'onReady': onPlayerReady
+                    }
+                });
+            }
+        }
+
+        async function loadItems(jsonFile, videoId) {
+
+            playEpisode('youtubePlayer', videoId);
+
+            const response = await fetch(jsonFile);
+            const items = await response.json();
+
+            const itemsContainer = document.getElementById("itemsContainer");
+            itemsContainer.innerHTML = '';
+
+            items.forEach(item => {
+
+                const card = document.createElement("div");
+                card.className = "bg-gray-800 rounded-lg shadow-lg p-4 w-64 text-center";
+
+                card.innerHTML = `
+                    <div class="flex flex-col md:flex-row justify-center items-center gap-4">
+                        <div class="text-center md:text-right">
+                            <a href="${item.obtained.link}" target="_blank" class="hover:opacity-80 transition text-center">
+                                <img src="${item.obtained.thumbnail}" alt="${item.obtained.name}" class="w-36 h-32 object-contain rounded mb-2">
+                                <h2 class="text-lg font-bold text-yellow-300">Obtained</h2>
+                                <p class="text-yellow-100">${item.obtained.name}</p>
+                            </a>
+                        </div>
+                        <div class="text-center md:text-left">
+                            <a href="${item.unlocked.link}" target="_blank" class="hover:opacity-80 transition text-center">
+                                <img src="${item.unlocked.thumbnail}" alt="${item.unlocked.name}" class="w-36 h-32 object-contain rounded mb-2">
+                                <h2 class="text-lg font-bold text-gray-400">Unlocked</h2>
+                                <p class="text-gray-200">${item.unlocked.name}</p>
+                            </a>
+                        </div>
+                    </div>
+                    <button onclick="scrubToTimestamp('${item.timestamp}')" class="mt-4 px-4 py-2 bg-yellow-300 text-gray-900 font-semibold rounded hover:bg-yellow-400 transition">Go to ${item.timestamp}</button>
+                `;
+                
+                itemsContainer.appendChild(card);
+            });
+        }
+
+        function scrubToTimestamp(timestamp) {
+            let count = (timestamp.match(/:/g) || []).length;
+            if (count < 2) {
+                timestamp = "00:" + timestamp;
+            }
+            const [hours, minutes, seconds] = timestamp.split(":").map(Number);
+            const totalSeconds = (hours || 0) * 3600 + (minutes || 0) * 60 + (seconds || 0);
+            if (player && player.seekTo) {
+                player.seekTo(totalSeconds, true);
+            } else {
+                console.error("Player is not ready.");
+            }
+        }
+        
+    </script>
 </body>
 </html>
