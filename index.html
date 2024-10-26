@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game of Chance</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body class="bg-gray-900 text-gray-200 font-sans antialiased">
     <header class="bg-gray-800 p-4 lg:hidden flex justify-between items-center">
@@ -39,16 +40,14 @@
             </div>
 
             <div id="progress" class="hidden">
-                <h1 class="text-3xl font-bold text-yellow-300">Episode Progress</h1>
-                <div class="flex justify-center gap-4 mt-4">
-                    <button onclick="loadItems('ep1.json', 'r3arQENE5HI')" class="px-4 py-2 bg-yellow-300 text-gray-900 font-semibold rounded hover:bg-yellow-400 transition">Episode 1</button>
-                    <button onclick="loadItems('ep2.json', 'GJbZr9ffbb8')" class="px-4 py-2 bg-yellow-300 text-gray-900 font-semibold rounded hover:bg-yellow-400 transition">Episode 2</button>
-                </div>
-
-                <div class="flex justify-center mb-8">
-                    <div id="youtubePlayer"></div>
-                </div>
-
+                    <h1 class="text-3xl font-bold text-yellow-300">Episode Progress</h1>
+                    <div id="episodeButtons" class="flex justify-center gap-4 mt-4"></div>
+                    <div class="flex justify-center mt-2 mb-8">
+                        <div class="relative w-full max-w-xl overflow-hidden">
+                            <div id="youtubePlayer"></div>
+                        </div>
+                    </div>
+            
                 <div id="itemsContainer" class="flex flex-wrap gap-6 justify-center"></div>
             </div>
 
@@ -85,12 +84,6 @@
     </div>
 
     <script>
-        var tag = document.createElement('script');
-
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
         function showContent(section) {
             document.getElementById('welcome').classList.add('hidden');
             document.getElementById('progress').classList.add('hidden');
@@ -121,6 +114,22 @@
         }
 
 
+        async function loadEpisodes() {
+            const response = await fetch('episodes.json');
+            const episodes = await response.json();
+            
+            const episodeButtons = document.getElementById('episodeButtons');
+            episodeButtons.innerHTML = '';
+
+            episodes.forEach(episode => {
+                const button = document.createElement('button');
+                button.textContent = episode.name;
+                button.className = "px-4 py-2 bg-yellow-300 text-gray-900 font-semibold rounded hover:bg-yellow-400 transition";
+                button.onclick = () => loadItems(episode.json, episode.videoId);
+                episodeButtons.appendChild(button);
+            });
+        }
+
         function playEpisode(container, videoId) {
             if (player && isPlayerReady) {
                 player.loadVideoById(videoId);
@@ -131,7 +140,7 @@
                     videoId: videoId,
                     events: {
                         'onReady': onPlayerReady
-                    }
+                    },
                 });
             }
         }
@@ -139,40 +148,44 @@
         async function loadItems(jsonFile, videoId) {
 
             playEpisode('youtubePlayer', videoId);
+            try {
+                const response = await fetch(jsonFile);
+                const items = await response.json();
 
-            const response = await fetch(jsonFile);
-            const items = await response.json();
+                const itemsContainer = document.getElementById("itemsContainer");
+                itemsContainer.innerHTML = '';
 
-            const itemsContainer = document.getElementById("itemsContainer");
-            itemsContainer.innerHTML = '';
+                items.forEach(item => {
 
-            items.forEach(item => {
+                    const card = document.createElement("div");
+                    card.className = "bg-gray-800 rounded-lg shadow-lg p-4 w-64 text-center";
 
-                const card = document.createElement("div");
-                card.className = "bg-gray-800 rounded-lg shadow-lg p-4 w-64 text-center";
-
-                card.innerHTML = `
-                    <div class="flex flex-col md:flex-row justify-center items-center gap-4">
-                        <div class="text-center md:text-right">
-                            <a href="${item.obtained.link}" target="_blank" class="hover:opacity-80 transition text-center">
-                                <img src="${item.obtained.thumbnail}" alt="${item.obtained.name}" class="w-36 h-32 object-contain rounded mb-2">
-                                <h2 class="text-lg font-bold text-yellow-300">Obtained</h2>
-                                <p class="text-yellow-100">${item.obtained.name}</p>
-                            </a>
+                    card.innerHTML = `
+                        <div class="flex flex-col md:flex-row justify-center items-center gap-4">
+                            <div class="text-center md:text-right">
+                                <a href="${item.obtained.link}" target="_blank" class="hover:opacity-80 transition text-center">
+                                    <img src="${item.obtained.thumbnail}" alt="${item.obtained.name}" class="w-36 h-32 object-contain rounded mb-2">
+                                    <h2 class="text-lg font-bold text-yellow-300">Obtained</h2>
+                                    <p class="text-yellow-100">${item.obtained.name}</p>
+                                </a>
+                            </div>
+                            <div class="text-center md:text-left">
+                                <a href="${item.unlocked.link}" target="_blank" class="hover:opacity-80 transition text-center">
+                                    <img src="${item.unlocked.thumbnail}" alt="${item.unlocked.name}" class="w-36 h-32 object-contain rounded mb-2">
+                                    <h2 class="text-lg font-bold text-gray-400">Unlocked</h2>
+                                    <p class="text-gray-200">${item.unlocked.name}</p>
+                                </a>
+                            </div>
                         </div>
-                        <div class="text-center md:text-left">
-                            <a href="${item.unlocked.link}" target="_blank" class="hover:opacity-80 transition text-center">
-                                <img src="${item.unlocked.thumbnail}" alt="${item.unlocked.name}" class="w-36 h-32 object-contain rounded mb-2">
-                                <h2 class="text-lg font-bold text-gray-400">Unlocked</h2>
-                                <p class="text-gray-200">${item.unlocked.name}</p>
-                            </a>
-                        </div>
-                    </div>
-                    <button onclick="scrubToTimestamp('${item.timestamp}')" class="mt-4 px-4 py-2 bg-yellow-300 text-gray-900 font-semibold rounded hover:bg-yellow-400 transition">Go to ${item.timestamp}</button>
-                `;
-                
-                itemsContainer.appendChild(card);
-            });
+                        <button onclick="scrubToTimestamp('${item.timestamp}')" class="mt-4 px-4 py-2 bg-yellow-300 text-gray-900 font-semibold rounded hover:bg-yellow-400 transition">Go to ${item.timestamp}</button>
+                    `;
+                    
+                    itemsContainer.appendChild(card);
+                });
+            } catch (error) {
+                document.getElementById('itemsContainer').innerHTML = "<p class='text-center text-gray-400'>Couldn't load items for this episode. Check back later!</p>";
+                console.error("Error loading items:", error);
+            }
         }
 
         function scrubToTimestamp(timestamp) {
@@ -188,7 +201,8 @@
                 console.error("Player is not ready.");
             }
         }
-        
+
+        loadEpisodes();
     </script>
 </body>
 </html>

@@ -1,0 +1,17 @@
+[
+    {
+        "name": "Episode 1",
+        "json": "episodes/ep1.json",
+        "videoId": "r3arQENE5HI"
+    },
+    {
+        "name": "Episode 2",
+        "json": "episodes/ep2.json",
+        "videoId": "GJbZr9ffbb8"
+    },
+    {
+        "name": "Episode 3",
+        "json": "episodes/ep3.json",
+        "videoId": "O56OOtOCMnY"
+    }
+]
