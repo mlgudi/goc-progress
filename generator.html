@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item JSON generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+</head>
+<body class="bg-gray-900 text-gray-200 font-sans antialiased p-8">
+    <div class="container mx-auto">
+        <h1 class="text-3xl font-bold text-yellow-300 mb-8">Item JSON generator</h1>
+        <p>Load the episode you want, watch along to get the items and timestamps.</p>
+        <div class="mb-4">
+            <label class="text-lg">YouTube Link:</label>
+            <input id="ytLink" type="text" class="w-full p-2 rounded bg-gray-700 text-yellow-300" placeholder="Enter YouTube URL">
+            <button onclick="loadYouTubeVideo()" class="mt-2 px-4 py-2 bg-yellow-300 text-gray-900 font-semibold rounded hover:bg-yellow-400 transition">Load Video</button>
+        </div>
+
+        <div id="youtubePlayer" class="sticky top-0 mb-8 z-50"></div>
+        
+        <div id="itemsContainer" class="space-y-8">
+        </div>
+
+        <button onclick="addNewItem()" class="px-4 py-2 bg-green-500 text-white font-semibold rounded hover:bg-green-600 transition mb-4">Add New Item</button>
+        
+        <button onclick="generateJson()" class="px-4 py-2 bg-blue-500 text-white font-semibold rounded hover:bg-blue-600 transition">Generate JSON</button>
+
+        <pre id="outputJson" class="mt-4 p-4 bg-gray-800 rounded"></pre>
+    </div>
+
+    <script>
+        let player;
+        let items = [];
+
+        function loadYouTubeVideo() {
+            const url = document.getElementById('ytLink').value;
+            if(url.empty) {
+                alert("Please enter a valid YouTube URL.");
+                return;
+            }
+            const videoId = new URL(url).searchParams.get('v');
+            
+            if (player) {
+                player.loadVideoById(videoId);
+            } else {
+                player = new YT.Player('youtubePlayer', {
+                    height: '390',
+                    width: '640',
+                    videoId: videoId,
+                    events: {
+                        'onReady': () => console.log("Player is ready")
+                    }
+                });
+            }
+        }
+
+        $.getScript('//www.youtube.com/iframe_api');
+
+        function formatInput(input) {
+            return input.charAt(0).toUpperCase() + input.slice(1).toLowerCase().replace(/ /g, "_");
+        }
+
+        function addNewItem() {
+            const itemIndex = items.length;
+            items.push({ 
+                obtained: { name: '', link: '', thumbnail: '' },
+                unlocked: { name: '', link: '', thumbnail: '' },
+                timestamp: ''
+            });
+
+            const itemHtml = `
+                <div class="relative bg-gray-800 p-4 rounded space-y-4" id="item-${itemIndex}">
+                    <div class="absolute top-2 right-2 bg-yellow-500 text-gray-900 font-bold rounded-full w-8 h-8 flex items-center justify-center">
+                        #${itemIndex + 1}
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Obtained Section -->
+                        <div class="flex flex-col space-y-2">
+                            <label>Obtained:</label>
+                            <input type="text" class="p-2 rounded bg-gray-700 text-yellow-300 w-full" placeholder="Obtained" 
+                                   onchange="fetchWikiData(${itemIndex}, 'obtained', formatInput(this.value))">
+                            <label>Obtained Wiki Link:</label>
+                            <div class="flex gap-1">
+                                <input type="text" id="obtainedWikiLink-${itemIndex}" class="p-2 rounded bg-gray-700 text-yellow-300 w-full">
+                                <a href="#" class="wikilink" target="_blank" data-itemindex="${itemIndex}" data-section="obtained">
+                                    <button class="px-4 py-2 bg-yellow-300 text-gray-900 font-semibold rounded hover:bg-yellow-400 transition" type="button">Open</button>
+                                </a>
+                            </div>
+                            <label>Obtained Thumbnail:</label>
+                            <input type="text" id="obtainedThumbnailInput-${itemIndex}" class="p-2 rounded bg-gray-700 text-yellow-300 w-full" 
+                                   onchange="updateThumbnail(${itemIndex}, 'obtained', this.value)">
+                            <img id="obtainedThumbnail-${itemIndex}" src="" alt="Obtained Thumbnail" class="w-24 h-24 rounded mx-auto">
+                        </div>
+
+                        <!-- Unlocked Section -->
+                        <div class="flex flex-col space-y-2">
+                            <label>Unlocked:</label>
+                            <input type="text" class="p-2 rounded bg-gray-700 text-yellow-300 w-full" placeholder="Unlocked" 
+                                   onchange="fetchWikiData(${itemIndex}, 'unlocked', formatInput(this.value))">
+                            <label>Unlocked Wiki Link:</label>
+                            <div class="flex gap-1">
+                                <input type="text" id="unlockedWikiLink-${itemIndex}" class="p-2 rounded bg-gray-700 text-yellow-300 w-full">
+                                <a href="#" class="wikilink" target="_blank" data-itemindex="${itemIndex}" data-section="unlocked">
+                                    <button class="px-4 py-2 bg-yellow-300 text-gray-900 font-semibold rounded hover:bg-yellow-400 transition" type="button">Open</button>
+                                </a>
+                            </div>
+                            <label>Unlocked Thumbnail:</label>
+                            <input type="text" id="unlockedThumbnailInput-${itemIndex}" class="p-2 rounded bg-gray-700 text-yellow-300 w-full" 
+                                   onchange="updateThumbnail(${itemIndex}, 'unlocked', this.value)">
+                            <img id="unlockedThumbnail-${itemIndex}" src="" alt="Unlocked Thumbnail" class="w-24 h-24 rounded mx-auto">
+                        </div>
+                    </div>
+
+                    <!-- Timestamp Section -->
+                    <div class="flex items-center space-x-4">
+                        <label>Timestamp:</label>
+                        <input type="text" class="p-2 rounded bg-gray-700 text-yellow-300 w-24" placeholder="Timestamp" id="timestamp-${itemIndex}">
+                        <button onclick="setCurrentTimestamp(${itemIndex})" class="px-2 py-1 bg-yellow-500 text-gray-900 rounded">Get Timestamp</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('itemsContainer').insertAdjacentHTML('beforeend', itemHtml);
+        }
+
+        function updateItem(index, field, value) {
+            const [section, property] = field.split('.');
+            items[index][section][property] = value;
+        }
+
+        function setCurrentTimestamp(index) {
+            if (player && player.getCurrentTime) {
+                const seconds = Math.floor(player.getCurrentTime());
+                const timestamp = new Date(seconds * 1000).toISOString().substr(11, 8);
+                document.getElementById(`timestamp-${index}`).value = timestamp;
+                items[index].timestamp = timestamp;
+            }
+        }
+
+        function fetchWikiData(index, section, itemName) {
+            const wikiLink = `https://oldschool.runescape.wiki/w/${itemName}`;
+            const thumbnailUrl = `https://oldschool.runescape.wiki/images/thumb/${itemName}_detail.png/100px-${itemName}_detail.png`;
+            
+            document.getElementById(`${section}WikiLink-${index}`).value = wikiLink;
+            document.getElementById(`${section}ThumbnailInput-${index}`).value = thumbnailUrl;
+            document.getElementById(`${section}Thumbnail-${index}`).src = thumbnailUrl;
+            updateItem(index, `${section}.link`, wikiLink);
+            updateItem(index, `${section}.thumbnail`, thumbnailUrl);
+            updateItem(index, `${section}.name`, itemName.replace(/_/g, " "));
+        }
+
+        function updateThumbnail(index, section, newUrl) {
+            document.getElementById(`${section}Thumbnail-${index}`).src = newUrl;
+            updateItem(index, `${section}.thumbnail`, newUrl);
+        }
+
+        function validateItems() {
+            for (const item of items) {
+                if (!item.obtained.name || !item.obtained.link || !item.obtained.thumbnail ||
+                    !item.unlocked.name || !item.unlocked.link || !item.unlocked.thumbnail ||
+                    !item.timestamp) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function generateJson() {
+            if (!validateItems()) {
+                alert("All fields must be filled before generating JSON.");
+                return;
+            }
+            
+            const jsonOutput = JSON.stringify(items, null, 2);
+            document.getElementById('outputJson').textContent = jsonOutput;
+        }
+
+        $(document).on('click', '.wikilink', function(e) {
+            e.preventDefault();
+            const itemIndex = $(this).data('itemindex');
+            const section = $(this).data('section');
+            const url = $(`#${section}WikiLink-${itemIndex}`).val();
+            if (url) {
+                window.open(url, '_blank');
+            }
+        });
+    </script>
+</body>
+</html>
